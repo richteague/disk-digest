@@ -17,6 +17,12 @@ const DISK_TERMS = [
   "circumstellar disc",
   "protostellar disk",
   "protostellar disc",
+  "planet-forming disk",
+  "planet-forming disc",
+  "circumbinary disk",
+  "circumbinary disc",
+  "circumplanetary disk",
+  "circumplanetary disc",
 ];
 
 const CONTEXT_TERMS = [
@@ -38,9 +44,30 @@ const CONTEXT_TERMS = [
   "pebble accretion",
   "DSHARP",
   "disk substructure",
+  // gas kinematics & dynamics
+  "gas kinematics",
+  "disk kinematics",
+  "velocity perturbation",
+  "non-Keplerian",
+  "planet-disk interaction",
+  "planet-disc interaction",
+  "gravitational instability",
+  "disk warp",
+  // disk chemistry
+  "astrochemistry",
+  "molecular line",
+  "CO isotopologue",
+  "disk chemistry",
+  // disk types & structures
+  "transition disk",
+  "transition disc",
+  "inner cavity",
+  "dust cavity",
+  // magnetic fields in disks
+  "magnetic field",
 ];
 
-const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // --- arXiv -------------------------------------------------------------------
 // Search arXiv for papers which might be releavant based on the keywords above.
@@ -81,7 +108,7 @@ async function isRelevant(paper) {
     max_tokens: 10,
     messages: [{
       role: "user",
-      content: `Is this astrophysics paper primarily about protoplanetary disks or planet formation around young stars? Answer only YES or NO.
+      content: `Is this astrophysics paper significantly related to protoplanetary disks, planet formation, or the use of circumstellar disks to characterize young stars (e.g. disk-based stellar masses, pre-main sequence evolution)? Answer only YES or NO.
 
 Title: ${paper.title}
 Abstract: ${paper.abstract}`,
@@ -100,7 +127,7 @@ async function slackGet(endpoint, params = {}) {
   const url = new URL(`https://slack.com/api/${endpoint}`);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${SLACK_BOT_TOKEN}` },
+    headers: { Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}` },
   });
   const data = await res.json();
   if (!data.ok) throw new Error(`Slack ${endpoint} error: ${data.error}`);
@@ -108,7 +135,7 @@ async function slackGet(endpoint, params = {}) {
 }
 
 async function fetchChannelMembers() {
-  const { members: ids } = await slackGet("conversations.members", { channel: SLACK_CHANNEL_ID, limit: 200 });
+  const { members: ids } = await slackGet("conversations.members", { channel: process.env.SLACK_CHANNEL_ID, limit: 200 });
   const details = await Promise.all(ids.map(id => slackGet("users.info", { user: id }).catch(() => null)));
   return details
     .filter(d => d && !d.user.is_bot && !d.user.deleted)
@@ -140,10 +167,10 @@ async function postToSlack(blocks) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${SLACK_BOT_TOKEN}`,
+      Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
     },
     body: JSON.stringify({
-      channel: SLACK_CHANNEL_ID,
+      channel: process.env.SLACK_CHANNEL_ID,
       blocks,
       text: "Protoplanetary Disk Digest",
     }),
