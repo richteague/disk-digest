@@ -23,6 +23,7 @@ const DISK_TERMS = [
   "circumbinary disc",
   "circumplanetary disk",
   "circumplanetary disc",
+  "disk-based",
 ];
 
 const CONTEXT_TERMS = [
